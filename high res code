@@ -1,0 +1,217 @@
+
+#import cv2
+#import numpy as np
+#import matplotlib.pyplot as plt
+#import PIL
+#from PIL import Image, ImageEnhance
+import time
+from picamera import PiCamera
+import subprocess
+import os
+
+
+orbit_number = 0
+orbit_type = 10  #high resolution
+picture_number = 0
+
+#global picture_number
+
+with open('/home/pi/pictures/image_files.txt', 'w') as f:
+        f.write('')
+
+def take_picture(length, width, type):
+    global picture_number
+    global file_name
+    global file_name2
+    #print("instantiate")
+    camera = PiCamera()
+    #print("instantiate 2")
+    #print(camera.revision)
+    camera.resolution= (length, width)
+    camera.vflip = True
+    camera.contrast = 10
+    file_name= ('/home/pi/pictures/orbit' +str(orbit_number)+'_picture' + str (picture_number) + 'type'+ type+ '.jpg')
+    file_name2= ('orbit' +str(orbit_number)+'_picture' + str (picture_number) + 'type'+ type+ '.jpg')
+    camera.capture(file_name)
+    camera.close()
+    #print("File"+file_name)
+    print("Done.")
+    time.sleep(5)
+    picture_number += 1
+
+
+def picture_loop_low():
+  global picture_number, length, width, type
+  for picture_number in range(4):
+    take_picture(1280, 720,'LOW')
+    with open('/home/pi/pictures/image_files.txt', 'a') as f:
+        f.write(file_name2+'\n')
+    #print('image written')
+
+def picture_loop_high(position1, position2, position3, position4):
+  global picture_number, length, width, type
+  for picture_number in range(4):
+    print("This is the picture number of HIGH: "+str(picture_number))
+    time.sleep(5)
+    if position1  == picture_number:
+      take_picture(1920, 1080, 'HIGH')
+    elif position2  == picture_number:
+      take_picture(1920, 1080, 'HIGH')
+    elif position3  == picture_number:
+      take_picture(1920, 1080, 'HIGH')
+    elif position4  == picture_number:
+      take_picture(1920, 1080, 'HIGH')
+
+
+def bluetooth_transfer():
+    path = '/home/pi/pictures'
+    os.chdir(path)
+    with open("groundstation.txt", 'r') as hosts_to_send:
+    #           print("hosts:",hosts_to_send)
+        for host_to_send in hosts_to_send:
+            host_to_send = host_to_send.rstrip('\n') # drop newline
+    #                   print("host:",host_to_send)
+            with open("image_files.txt",'r') as files_to_send:
+    #                           print(files_to_send)
+                for filename_to_send in files_to_send:
+                    filename_to_send = filename_to_send.rstrip('\n') # drop newline
+    #                                   print(filename_to_send)
+                # sendfile = subprocess.run(["/usr/bin/obexftp", "-b", host_to_send, "-p", filename_to_send],shell=True,text=True,stdout=subprocess.PIPE,check=True,executable='/bin/bash')
+    #                   sendfile_cmd = print("/usr/bin/obexftp","-b",host_to_send,"-p",filename_to_send)
+    #                                   print(sendfile_cmd)
+                    sendfile = subprocess.call(["/usr/bin/obexftp", "-b", host_to_send, "-p", filename_to_send],stdout=subprocess.PIPE)
+    #                    sendfile = subprocess.call(["/usr/bin/obexftp", "--nopath", "--noconn", "--uuid", "none", "--bluetooth",  host_to_send, "--channel", "4", "-p", filename_to_send])
+    #                                   recordfilenames = subprocess.call(["ls -l", "/home/pi/pictures|grep", "-v", "total|grep", "-v", "filename_new.txt|awk", "{'print $9'}", ">", "filename_new.txt"],stdout=subprocess.PIPE)
+    #                   print(filename_to_send)
+    #                   print(recordfilenames)
+    #                   for line in sendfile.stdout.split('\n'):
+    #                                   if 'done' in line:
+    #                           print('{}: {}'.format(sendfile, line))
+    with open('/home/pi/pictures/image_files.txt', 'w') as f:
+        f.write('')
+
+
+def bluetooth_receive():
+    path = '/home/pi/pictures'
+    os.chdir(path)
+    with open("groundstation.txt", 'r') as hosts_to_send:
+    #           print("hosts:",hosts_to_send)
+        for host_to_send in hosts_to_send:
+            host_to_send = host_to_send.rstrip('\n') # drop newline
+    #                   print("host:",host_to_send)
+    #        with open("image_files.txt",'r') as files_to_send:
+    #                           print(files_to_send)
+    #            for filename_to_send in files_to_send:
+            filename_to_send1 = 'plastic_percents1.txt'
+            filename_to_send2 = 'plastic_percents2.txt'
+    #                                   print(filename_to_send)
+                # sendfile = subprocess.run(["/usr/bin/obexftp", "-b", host_to_send, "-p", filename_to_send],shell=True,text=True,stdout=subprocess.PIPE,check=True,executabl>
+    #                   sendfile_cmd = print("/usr/bin/obexftp","-b",host_to_send,"-p",filename_to_send)
+    #                                   print(sendfile_cmd)
+            sendfile = subprocess.call(["/usr/bin/obexftp", "-b", host_to_send, "-g", filename_to_send1],stdout=subprocess.PIPE)
+            sendfile = subprocess.call(["/usr/bin/obexftp", "-b", host_to_send, "-g", filename_to_send2],stdout=subprocess.PIPE)
+    #                    sendfile = subprocess.call(["/usr/bin/obexftp", "--nopath", "--noconn", "--uuid", "none", "--bluetooth",  host_to_send, "--channel", "4", "-p", file>
+    #                                   recordfilenames = subprocess.call(["ls -l", "/home/pi/pictures|grep", "-v", "total|grep", "-v", "filename_new.txt|awk", "{'print $9'}>
+    #                   print(filename_to_send)
+    #                   print(recordfilenames)
+    #                   for line in sendfile.stdout.split('\n'):
+    #                                   if 'done' in line:
+    #                           print('{}: {}'.format(sendfile, line))
+
+
+
+
+def position():
+    global position1, position2, position3, position4
+    path = '/home/pi/pictures'
+    os.chdir(path)
+    position_list = []
+    count = 0
+    with open("plastic_percents1.txt",'r') as percents:
+    #                           print(files_to_send)
+        for percent in percents:
+            percent = percent.rstrip('\n')
+            if float(percent) > 15:
+                position_list.append(str(count))
+            else:
+                position_list.append('-1')
+        count += 1
+    print(position_list)
+    position1 = position_list.pop(0)
+    position2 = position_list.pop(1)
+    position3 = position_list.pop(2)
+    position4 = position_list.pop(3)
+
+
+
+def position2():
+    global position1, position2, position3, position4
+    path = '/home/pi/pictures'
+    os.chdir(path)
+    position_list = []
+    count = 0
+    with open("plastic_percents2.txt",'r') as percents:
+    #                           print(files_to_send)
+        for percent in percents:
+            percent = percent.rstrip('\n')
+            if float(percent) > 15:
+                position_list.append(count)
+                count += 1
+            else:
+                position_list.append('-1')
+    print(position_list)
+    position1 = position_list.pop(0)
+    position2 = position_list.pop(1)
+    position3 = position_list.pop(2)
+    position4 = position_list.pop(3)
+
+
+
+
+for orbit_number in range(4):
+    #orbit_type = 10  # "high resolution"
+  print(orbit_type)
+  if orbit_number % 2 == 0: #orbit number is even
+    # #toggle orbit type
+    if orbit_type== 10:
+      orbit_type = 0 #switch it
+      print("Taking LOW resolution picture")
+      picture_loop_low()
+      bluetooth_transfer()
+      #statistic(file_name2)
+      print('Waiting! Run imaging1.')
+      time.sleep(10)
+    #else:
+    #  orbit_type = 10
+    #  print('High pictures')
+    #  time.sleep(1)
+    
+    else:
+      orbit_type = 10
+      print("Taking HIGH resolution picture")
+      #bluetooth_receive()
+      position()
+      picture_loop_high(position1, position2, position3, position4)
+      time.sleep(1)
+    
+  else:
+    if orbit_type == 0:
+      print("Taking LOW resolution picture")
+      picture_loop_low()
+      bluetooth_transfer()
+      #statistic(file_name2)
+      print('Waiting! Run imaging2.')
+      time.sleep(10)
+    #else:
+    #  print('High pictures')
+    
+    else:
+      print("Taking HIGH resolution picture")
+      #bluetooth_receive()
+      position2()
+      picture_loop_high(position1, position2, position3, position4)
+      time.sleep(1)
+    
+  print("Orbit number "+str(orbit_number))
+  orbit_number += 1
+
